@@ -13,4 +13,4 @@ output layer = 10 neurons; softmax {activation function}; cross entropy {loss fu
 
 weight-optimization = adam;
 
-its tensorflow example is at link: https://github.com/aymericdamien/TensorFlow-Examples/blob/master/examples/3_NeuralNetworks/multilayer_perceptron.py
+Taken from tensorflow example is at link: https://github.com/aymericdamien/TensorFlow-Examples/blob/master/examples/3_NeuralNetworks/multilayer_perceptron.py
