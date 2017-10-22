@@ -9,7 +9,7 @@ warnings.filterwarnings("error")
 
 def init_weight(size1, size2):
     mean = 0
-    sigma = 0.01
+    sigma = 0.1
     return np.random.normal(mean, sigma, (size1, size2))
 
 def sigmoid(x):
@@ -21,8 +21,8 @@ def desigmoid(x):
 
 def softmax(x):
     try:
-        # x = np.where(x>50,50,x)
-        # x = np.where(x<-50,-50,x)
+        x = np.where(x>50,50,x)
+        x = np.where(x<-50,-50,x)
         sum = np.sum(np.exp(x))
     except RuntimeWarning:
         pass
@@ -81,8 +81,8 @@ def train_process(x, t, wi2h1, wh12h2, wh22o, neta, regu):
 
         # gradient
         g_o2h2 = o-t[i]
-        g_h22h1 = np.dot(g_o2h2, wh22o.T)*derelu(h2)
-        g_h12i = np.dot(g_h22h1, wh12h2.T)*derelu(h1)
+        g_h22h1 = np.dot(g_o2h2, wh22o.T)*derelu(np.dot(h1, wh12h2))
+        g_h12i = np.dot(g_h22h1, wh12h2.T)*derelu(np.dot(x[i], wi2h1))
         to = grad(g_o2h2, h2)
         th2 = grad(g_h22h1, h1)
         th1 = grad(g_h12i, x[i])
@@ -91,9 +91,9 @@ def train_process(x, t, wi2h1, wh12h2, wh22o, neta, regu):
         dw_h12h2 += th2
         dw_i2h1 += th1
 
-    # dw_i2h1 += regu * wi2h1 * np.sign(wi2h1)
-    # dw_h12h2 += regu * wh12h2 * np.sign(wh12h2)
-    # dw_h22o += regu * wh22o * np.sign(wh22o)
+    dw_i2h1 += regu * wi2h1
+    dw_h12h2 += regu * wh12h2
+    dw_h22o += regu * wh22o
 
     wh22o, m3, v3, lr3 = adam_weight_update(wh22o, dw_h22o / x.shape[0], m3, v3, lr3)
     wh12h2, m2, v2, lr2 = adam_weight_update(wh12h2, dw_h12h2 / x.shape[0], m2, v2, lr2)
@@ -102,16 +102,11 @@ def train_process(x, t, wi2h1, wh12h2, wh22o, neta, regu):
 
 def adam_weight_update(w, g, m, v, lr, b1=0.9, b2=0.99, e=1e-8):
     i_t = 1.0
-    fix1 = (1. - b1)
-    fix2 = (1. - b2)
-    m_t = (b1 * g) + ((1. - b1) * m)
-    v_t = (b2 * np.square(g)) + ((1. - b2) * v)
-    g_t = m_t / (np.sqrt(v_t) + e)
-    w = w - (lr * g_t)
-    m = m_t
-    v = v_t
-    lr = lr * (np.sqrt(fix2) / fix1)
-    return w, m, v, lr
+    m_t = (b1 * m) + ((1. - b1) * g)
+    v_t = (b2 * v) + ((1. - b2) * np.square(g))
+    w = w - (lr * m_t / (np.sqrt(v_t) + e))
+    lr = lr * (np.sqrt(1. - b2) / (1. - b1))
+    return w, m_t, v_t, lr
 
 def shuff(t, l, n):
     a = [(t[i], l[i]) for i in range(n)]
@@ -125,6 +120,12 @@ def shuff(t, l, n):
 
 def train(train_data, train_label, wi2h1, wh12h2, wh22o, log=0, batchs=200, training_epoc=20, neta=0.01, regu=0.01,layrs=[]):
     global m1, m2, m3, v1, v2, v3, lr1, lr2, lr3
+    m1 = np.zeros((layrs[0], layrs[1]))
+    v1 = np.zeros((layrs[0], layrs[1]))
+    m2 = np.zeros((layrs[1], layrs[2]))
+    v2 = np.zeros((layrs[1], layrs[2]))
+    m3 = np.zeros((layrs[2], layrs[3]))
+    v3 = np.zeros((layrs[2], layrs[3]))
     epoc = 0
     nsample = len(train_data)
     print "Number of batchs : %d" % (nsample/batchs)
@@ -132,12 +133,12 @@ def train(train_data, train_label, wi2h1, wh12h2, wh22o, log=0, batchs=200, trai
         log_file.write("Number of batchs : %d\n" % (nsample/batchs))
     err = 1.0
     while err > 0.01 and epoc < training_epoc:
-        m1 = np.zeros((layrs[0], layrs[1]))
-        v1 = np.zeros((layrs[0], layrs[1]))
-        m2 = np.zeros((layrs[1], layrs[2]))
-        v2 = np.zeros((layrs[1], layrs[2]))
-        m3 = np.zeros((layrs[2], layrs[3]))
-        v3 = np.zeros((layrs[2], layrs[3]))
+        # m1 = np.zeros((layrs[0], layrs[1]))
+        # v1 = np.zeros((layrs[0], layrs[1]))
+        # m2 = np.zeros((layrs[1], layrs[2]))
+        # v2 = np.zeros((layrs[1], layrs[2]))
+        # m3 = np.zeros((layrs[2], layrs[3]))
+        # v3 = np.zeros((layrs[2], layrs[3]))
         lr1 = 0.001
         lr2 = 0.001
         lr3 = 0.001
@@ -193,6 +194,9 @@ if __name__=="__main__":
     w_i2h1 = init_weight(i_size, h1_size)
     w_h12h2 = init_weight(h1_size, h2_size)
     w_h22o = init_weight(h2_size, o_size)
+    # w_i2h1 = np.random.randn(i_size, h1_size)
+    # w_h12h2 = np.random.randn(h1_size, h2_size)
+    # w_h22o = np.random.randn(h2_size, o_size)
     # w_i2h = np.zeros((i_size, h_size))
     # w_h2o = np.zeros((h_size, o_size))
 
