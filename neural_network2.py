@@ -83,13 +83,16 @@ def train_process(x, t, wi2h1, wh12h2, wh22o, neta, regu):
         g_o2h2 = o-t[i]
         g_h22h1 = np.dot(g_o2h2, wh22o.T)*derelu(np.dot(h1, wh12h2))
         g_h12i = np.dot(g_h22h1, wh12h2.T)*derelu(np.dot(x[i], wi2h1))
-        to = grad(g_o2h2, h2)
-        th2 = grad(g_h22h1, h1)
-        th1 = grad(g_h12i, x[i])
+        # to = grad(g_o2h2, h2)
+        # th2 = grad(g_h22h1, h1)
+        # th1 = grad(g_h12i, x[i])
 
-        dw_h22o += to
-        dw_h12h2 += th2
-        dw_i2h1 += th1
+        # dw_h22o += to
+        # dw_h12h2 += th2
+        # dw_i2h1 += th1
+        dw_h22o += grad(g_o2h2, h2)
+        dw_h12h2 += grad(g_h22h1, h1)
+        dw_i2h1 += grad(g_h12i, x[i])
 
     dw_i2h1 += regu * wi2h1
     dw_h12h2 += regu * wh12h2
@@ -118,7 +121,7 @@ def shuff(t, l, n):
         y.append(i[1])
     return np.array(x), np.array(y)
 
-def train(train_data, train_label, wi2h1, wh12h2, wh22o, log=0, batchs=200, training_epoc=20, neta=0.01, regu=0.01,layrs=[]):
+def train(train_data, train_label, wi2h1, wh12h2, wh22o, log=0, batchs=200, training_epoc=50, neta=0.01, regu=0.01,layrs=[]):
     global m1, m2, m3, v1, v2, v3, lr1, lr2, lr3
     m1 = np.zeros((layrs[0], layrs[1]))
     v1 = np.zeros((layrs[0], layrs[1]))
@@ -132,7 +135,7 @@ def train(train_data, train_label, wi2h1, wh12h2, wh22o, log=0, batchs=200, trai
     if log:
         log_file.write("Number of batchs : %d\n" % (nsample/batchs))
     err = 1.0
-    while err > 0.01 and epoc < training_epoc:
+    while err > 0.1 and epoc < training_epoc:
         # m1 = np.zeros((layrs[0], layrs[1]))
         # v1 = np.zeros((layrs[0], layrs[1]))
         # m2 = np.zeros((layrs[1], layrs[2]))
