@@ -167,7 +167,7 @@ def train(train_data, train_label, wi2h1, wh12h2, wh22o, log=0, batchs=200, trai
     return wi2h1, wh12h2, wh22o
 
 def test(x, y, wi2h1, wh12h2, wh22o, log=0):
-    correct = 0
+    correct = 0.0
     total = x.shape[0]
     for i in range(x.shape[0]):
         t = y[i]
